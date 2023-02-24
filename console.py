@@ -2,8 +2,9 @@
 """ Console Module """
 import cmd
 import sys
+import shlex
+import models
 from models.base_model import BaseModel
-from models.__init__ import storage
 from models.user import User
 from models.place import Place
 from models.state import State
@@ -19,16 +20,16 @@ class HBNBCommand(cmd.Cmd):
     prompt = '(hbnb) ' if sys.__stdin__.isatty() else ''
 
     classes = {
-        'BaseModel': BaseModel, 'User': User, 'Place': Place,
-        'State': State, 'City': City, 'Amenity': Amenity,
-        'Review': Review
-    }
+               'BaseModel': BaseModel, 'User': User, 'Place': Place,
+               'State': State, 'City': City, 'Amenity': Amenity,
+               'Review': Review
+              }
     dot_cmds = ['all', 'count', 'show', 'destroy', 'update']
     types = {
-        'number_rooms': int, 'number_bathrooms': int,
-        'max_guest': int, 'price_by_night': int,
-        'latitude': float, 'longitude': float
-    }
+             'number_rooms': int, 'number_bathrooms': int,
+             'max_guest': int, 'price_by_night': int,
+             'latitude': float, 'longitude': float
+            }
 
     def preloop(self):
         """Prints if isatty is false"""
@@ -37,7 +38,6 @@ class HBNBCommand(cmd.Cmd):
 
     def precmd(self, line):
         """Reformat command line for advanced command syntax.
-
         Usage: <class name>.<command>([<id> [<*args> or <**kwargs>]])
         (Brackets denote optional fields in usage example.)
         """
@@ -73,7 +73,7 @@ class HBNBCommand(cmd.Cmd):
                 pline = pline[2].strip()  # pline is now str
                 if pline:
                     # check for *args or **kwargs
-                    if pline[0] is '{' and pline[-1] is '}'\
+                    if pline[0] is '{' and pline[-1] is'}'\
                             and type(eval(pline)) is dict:
                         _args = pline
                     else:
@@ -114,27 +114,25 @@ class HBNBCommand(cmd.Cmd):
         pass
 
     def do_create(self, args):
-        """ Create an object of any class"""
-        # delimate by space
-        # look at first command as class
-        # rest should be dictionary passed to init
-        inpt = args.split()
-        if not args:
+        """Create an object of any class"""
+        line = shlex.split(args)
+        if len(line) == 0:
             print("** class name missing **")
-            return
-        elif inpt[0] not in HBNBCommand.classes:
+        elif line[0] not in HBNBCommand.classes:
             print("** class doesn't exist **")
-            return
         else:
-            new_instance = HBNBCommand.classes[inpt[0]]()
-            storage.save()
-            for i in range(1, len(inpt)):
-                attr = inpt[i].split('=')
-                if (len(attr) == 2):
-                    setattr(new_instance, attr[0], attr[1])
-            new_instance.save()
+            new_instance = HBNBCommand.classes[line[0]]()
+            if len(line) > 1:
+                for i in range(1, len(line)):
+                    pair = line[i].split('=')
+                    if len(pair) == 2:
+                        pair[1] = pair[1].replace('_', ' ')
+                        try:
+                            setattr(new_instance, pair[0], eval(pair[1]))
+                        except (SyntaxError, NameError):
+                            setattr(new_instance, pair[0], pair[1])
             print(new_instance.id)
-            storage.save()
+            new_instance.save()
 
     def help_create(self):
         """ Help information for the create method """
@@ -163,9 +161,10 @@ class HBNBCommand(cmd.Cmd):
             print("** instance id missing **")
             return
 
+        objDict = models.storage.all()
         key = c_name + "." + c_id
         try:
-            print(storage.all()[key])
+            print(objDict[key])
         except KeyError:
             print("** no instance found **")
 
@@ -197,8 +196,8 @@ class HBNBCommand(cmd.Cmd):
         key = c_name + "." + c_id
 
         try:
-            del (storage.all()[key])
-            storage.save()
+            del(models.storage.all()[key])
+            models.storage.save()
         except KeyError:
             print("** no instance found **")
 
@@ -209,6 +208,7 @@ class HBNBCommand(cmd.Cmd):
 
     def do_all(self, args):
         """ Shows all objects, or all objects of a class"""
+        objDict = models.storage.all()
         print_list = []
 
         if args:
@@ -216,14 +216,14 @@ class HBNBCommand(cmd.Cmd):
             if args not in HBNBCommand.classes:
                 print("** class doesn't exist **")
                 return
-            for k, v in storage.all(args).items():
+            for k, v in objDict.items():
                 if k.split('.')[0] == args:
-                    print_list.append(v.__str__())
+                    print_list.append(str(v))
         else:
-            for k, v in storage.all(args).items():
-                print_list.append(v.__str__())
-        print('[%s]' % ', '.join(map(str, print_list)))
-        return
+            for k, v in objDict.items():
+                print_list.append(str(v))
+
+        print(print_list)
 
     def help_all(self):
         """ Help information for the all command """
@@ -233,7 +233,8 @@ class HBNBCommand(cmd.Cmd):
     def do_count(self, args):
         """Count current number of class instances"""
         count = 0
-        for k, v in storage._FileStorage__objects.items():
+        objDict = models.storage.all()
+        for k, v in objDict.items():
             if args == k.split('.')[0]:
                 count += 1
         print(count)
@@ -269,7 +270,7 @@ class HBNBCommand(cmd.Cmd):
         key = c_name + "." + c_id
 
         # determine if key is present
-        if key not in storage.all():
+        if key not in models.storage.all():
             print("** no instance found **")
             return
 
@@ -303,7 +304,7 @@ class HBNBCommand(cmd.Cmd):
             args = [att_name, att_val]
 
         # retrieve dictionary of current objects
-        new_dict = storage.all()[key]
+        new_dict = models.storage.all()[key]
 
         # iterate through attr names and values
         for i, att_name in enumerate(args):
@@ -329,7 +330,6 @@ class HBNBCommand(cmd.Cmd):
         """ Help information for the update class """
         print("Updates an object with new information")
         print("Usage: update <className> <id> <attName> <attVal>\n")
-
 
 if __name__ == "__main__":
     HBNBCommand().cmdloop()
