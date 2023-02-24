@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 """ Console Module """
 import cmd
-import json
 import sys
 from models.base_model import BaseModel
 from models.__init__ import storage
@@ -116,6 +115,9 @@ class HBNBCommand(cmd.Cmd):
 
     def do_create(self, args):
         """ Create an object of any class"""
+        # delimate by space
+        # look at first command as class
+        # rest should be dictionary passed to init
         inpt = args.split()
         if not args:
             print("** class name missing **")
@@ -134,7 +136,6 @@ class HBNBCommand(cmd.Cmd):
             print(new_instance.id)
             storage.save()
 
-        
     def help_create(self):
         """ Help information for the create method """
         print("Creates a class of any type")
@@ -164,7 +165,7 @@ class HBNBCommand(cmd.Cmd):
 
         key = c_name + "." + c_id
         try:
-            print(storage._FileStorage__objects[key])
+            print(storage.all()[key])
         except KeyError:
             print("** no instance found **")
 
@@ -215,14 +216,14 @@ class HBNBCommand(cmd.Cmd):
             if args not in HBNBCommand.classes:
                 print("** class doesn't exist **")
                 return
-            for k, v in storage._FileStorage__objects.items():
+            for k, v in storage.all(args).items():
                 if k.split('.')[0] == args:
-                    print_list.append(str(v))
+                    print_list.append(v.__str__())
         else:
-            for k, v in storage._FileStorage__objects.items():
-                print_list.append(str(v))
-
-        print(print_list)
+            for k, v in storage.all(args).items():
+                print_list.append(v.__str__())
+        print('[%s]' % ', '.join(map(str, print_list)))
+        return
 
     def help_all(self):
         """ Help information for the all command """
