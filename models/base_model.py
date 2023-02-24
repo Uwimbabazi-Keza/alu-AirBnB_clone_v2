@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime
-
 Base = declarative_base()
 
 class BaseModel:
@@ -55,10 +54,10 @@ class BaseModel:
 
         if "_sa_instance_state" in dictionary:
             del dictionary["_sa_instance_state"]
-
         return dictionary
 
 
     def delete(self):
         """deletes the current instance from the storage"""
-        self.storage.delete()
+        from models import storage
+        storage.delete(self)
