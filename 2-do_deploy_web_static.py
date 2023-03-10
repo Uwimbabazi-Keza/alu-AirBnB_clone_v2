@@ -10,12 +10,12 @@ import shlex
 import os
 
 
-env.hosts = ['34.207.205.195', '3.88.212.60']
+env.hosts = ['3.88.212.60', '34.207.205.195']
 env.user = 'ubuntu'
 
 
 def do_deploy(archive_path):
-    """ does deploys """
+    """ deploys """
     if not os.path.exists(archive_path):
         return False
     try:
