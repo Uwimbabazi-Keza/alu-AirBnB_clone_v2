@@ -8,9 +8,9 @@ from datetime import datetime
 from fabric.api import *
 import shlex
 import os
+import re
 
-
-env.hosts = ['3.88.212.60', '34.207.205.195']
+env.hosts = ['34.207.205.195','3.88.212.60']
 env.user = 'ubuntu'
 
 
